@@ -28,7 +28,7 @@ fn rcon_tps(rcon_client: &RconClient, args: &Vec<String>) -> f32 {
     };
 
     //rconからの返答をパースする。
-    let re = if (&args[2] == &"ex") {
+    let re = if (&args[4] == &"ex") {
         match regex::Regex::new(r"\((\d+\.\d+) tick(s) per second\)") {
             Ok(re) => re,
             Err(e) => {
