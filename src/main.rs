@@ -7,7 +7,7 @@ fn net_send(content: String, send_type: String) {
     todo!();
 }
 
-fn rcon_tps(rcon_client: &RconClient) -> f32 {
+fn rcon_tps(rcon_client: &RconClient, args: &Vec<String>) -> f32 {
     //10秒間使ってtpsを計測し、f32で返す関数
     let mut rcon_result: String;
     let mut tps: f32 = 0.0;
@@ -28,11 +28,21 @@ fn rcon_tps(rcon_client: &RconClient) -> f32 {
     };
 
     //rconからの返答をパースする。
-    let re = match regex::Regex::new(r"\((\d+\.\d+) ticks per second\)") {
-        Ok(re) => re,
-        Err(e) => {
-            println!("サーバーがtpsを応答していません。\n{}", e);
-            return tps;
+    let re = if (&args[2] == &"ex") {
+        match regex::Regex::new(r"\((\d+\.\d+) tick(s) per second\)") {
+            Ok(re) => re,
+            Err(e) => {
+                println!("サーバーがtpsを応答していません。\n{}", e);
+                return tps;
+            }
+        }
+    } else {
+        match regex::Regex::new(r"\((\d+\.\d+) ticks per second\)") {
+            Ok(re) => re,
+            Err(e) => {
+                println!("サーバーがtpsを応答していません。\n{}", e);
+                return tps;
+            }
         }
     };
 
@@ -86,14 +96,13 @@ fn rcon_number_of_players(rcon_client: &RconClient) -> u16 {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let client_result: Result<RconClient, std::io::Error> =
-        RconClient::connect(&args[2]);
+    let client_result: Result<RconClient, std::io::Error> = RconClient::connect(&args[2]);
     match client_result {
         Ok(client) => {
             let _ = client.log_in(&args[3]);
             let number_of_players: u16 = rcon_number_of_players(&client); //ワールド人数の計測
-            let tps: f32 = rcon_tps(&client); //tpsの計測
-            if(&args[1] == &"io_csv"){
+            let tps: f32 = rcon_tps(&client, &args); //tpsの計測
+            if (&args[1] == &"io_csv") {
                 println!(
                     //一旦標準出力にcsv出力する。
                     "{},{},{}",
@@ -101,15 +110,17 @@ fn main() {
                     number_of_players,
                     tps
                 )
-            }else if(&args[1] == &"human"){
+            } else if (&args[1] == &"human") {
                 println!(
                     "現在オンラインのプレイヤーは{}人、tpsは{}です。",
                     number_of_players, tps
                 )
-            }else{
+            } else {
                 println!("引数を指定してください。io_csv, human");
             }
         }
-        Err(_) => println!("Minecraftサーバーにログイン出来ません。\nアプリケーションを終了します。")
+        Err(_) => {
+            println!("Minecraftサーバーにログイン出来ません。\nアプリケーションを終了します。")
+        }
     }
 }
